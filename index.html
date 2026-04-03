@@ -21,14 +21,12 @@ header p{font-size:0.85rem;color:#c7d2fe;margin-top:2px}
 #btn-limpiar{font-size:0.78rem;color:#6366f1;background:none;border:none;cursor:pointer;text-decoration:underline;display:none}
 #btn-actualizar{margin-left:auto;background:#6366f1;color:white;border:none;border-radius:8px;padding:7px 16px;font-size:0.85rem;cursor:pointer;font-weight:600}
 #btn-actualizar:hover{background:#4f46e5}
-.vistas{background:white;border-bottom:1px solid #e2e8f0;padding:10px 24px;display:flex;gap:8px}
-.vistas button{padding:6px 14px;border-radius:20px;border:none;font-size:0.82rem;font-weight:600;cursor:pointer;background:#f1f5f9;color:#475569;transition:all .2s}
-.vistas button.active{background:#6366f1;color:white}
 main{max-width:1100px;margin:0 auto;padding:24px}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px}
 .kpi-card{background:white;border-radius:12px;border:1px solid #e2e8f0;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .kpi-card .icon{font-size:1.4rem;margin-bottom:6px}
 .kpi-card .label{font-size:0.72rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.kpi-card .value{font-size:1.5rem;font-weight:800;color:#1e293b;margin-top:2px}
 .kpi-sub{font-size:0.68rem;color:#94a3b8;margin-top:4px}
 .charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:20px;margin-bottom:24px}
 .chart-card{background:white;border-radius:12px;border:1px solid #e2e8f0;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
@@ -69,12 +67,6 @@ tr:hover td{background:#f8fafc}
   <button id="btn-actualizar">🔄 Actualizar datos</button>
 </div>
 
-<div class="vistas">
-  <button class="active" data-vista="resumen">📊 Resumen</button>
-  <button data-vista="tendencia">📈 Tendencia</button>
-  <button data-vista="misiones">🗺️ Por Misión</button>
-</div>
-
 <main>
   <div id="loading">⏳ Cargando datos desde Google Sheets...</div>
   <div id="error-msg"></div>
@@ -82,33 +74,19 @@ tr:hover td{background:#f8fafc}
   <div class="seccion" id="sec-resumen">
     <div id="warning-florida" class="warning" style="display:none">
       <span style="font-size:1.2rem">⚠️</span>
-      <div><strong>Posible duplicidad de asistentes — La Florida</strong>Esta misión realiza reuniones el sábado y domingo. Algunas personas podrían asistir ambos días, por lo que los totales pueden estar sobreestimados. Los promedios se muestran separados por día.</div>
+      <div><strong>Posible duplicidad de asistentes — La Florida</strong>Esta misión realiza reuniones el sábado y domingo. Algunas personas podrían asistir ambos días, por lo que los totales pueden estar sobreestimados.</div>
     </div>
     <div class="kpi-grid" id="kpis"></div>
     <div class="charts-grid">
       <div class="chart-card" id="card-principal"><h2 id="titulo-principal"></h2><p class="subtitle" id="subtitulo-principal"></p><canvas id="chart-principal"></canvas></div>
       <div class="chart-card"><h2>Distribución por Misión</h2><canvas id="chart-pie"></canvas></div>
-      <div class="chart-card chart-full"><h2>Decisiones de Fe por Mes</h2><canvas id="chart-decisiones"></canvas></div>
+      <div class="chart-card chart-full"><h2>❤️ Decisiones de Fe por Misión y Mes</h2><p class="subtitle">Barras agrupadas por misión y mes</p><canvas id="chart-decisiones" style="max-height:320px"></canvas></div>
+      <div class="chart-card chart-full" style="margin-top:0">
+        <h2>❤️ Tabla de Decisiones de Fe</h2>
+        <p class="subtitle">Total por misión y mes</p>
+        <div style="overflow-x:auto"><table id="tabla-decisiones" style="font-size:0.8rem;border-collapse:collapse;width:100%"><thead></thead><tbody></tbody></table></div>
+      </div>
     </div>
-  </div>
-
-  <div class="seccion" id="sec-tendencia">
-    <div id="warning-florida-t" class="warning" style="display:none">
-      <span style="font-size:1.2rem">⚠️</span>
-      <div><strong>Posible duplicidad de asistentes — La Florida</strong>Los promedios se muestran separados por día (sábado/domingo).</div>
-    </div>
-    <div class="charts-grid">
-      <div class="chart-card chart-full" id="card-sabdom" style="display:none"><h2>Tendencia Sábado vs Domingo — La Florida</h2><p class="subtitle">Promedio de asistentes por reunión según día</p><canvas id="chart-sabdom"></canvas></div>
-      <div class="chart-card chart-full"><h2>Tendencia General</h2><canvas id="chart-tendencia"></canvas></div>
-    </div>
-    <div class="chart-card"><h2>Resumen por Mes</h2><div style="overflow-x:auto"><table id="tabla-meses"><thead></thead><tbody></tbody></table></div></div>
-  </div>
-
-  <div class="seccion" id="sec-misiones">
-    <div class="charts-grid">
-      <div class="chart-card chart-full"><h2>Comparación entre Misiones</h2><canvas id="chart-misiones"></canvas></div>
-    </div>
-    <div class="chart-card" style="margin-top:0"><h2>Detalle por Misión</h2><div style="overflow-x:auto"><table id="tabla-misiones"><thead><tr><th>Misión</th><th>Adultos</th><th>Niños</th><th>Vis. Adultos</th><th>Vis. Niños</th><th>Decisiones</th><th>Total</th></tr></thead><tbody></tbody></table></div></div>
   </div>
 </main>
 
@@ -117,17 +95,18 @@ const SHEET_ID  = "1H3K5kRTe1ntcme8NylN9Ei6tYsvzvQ41_xLX0pMQe9M";
 const SHEET_GID = "1575814348";
 const CSV_URL   = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
 const COLORS    = ["#6366f1","#22c55e","#f59e0b","#ef4444","#3b82f6","#ec4899","#14b8a6","#f97316","#a855f7","#64748b","#84cc16","#06b6d4"];
-const MES_LBL   = {"2025-04":"Abr 25","2025-05":"May 25","2025-06":"Jun 25","2025-07":"Jul 25","2025-08":"Ago 25","2025-09":"Sep 25","2025-10":"Oct 25","2025-11":"Nov 25","2025-12":"Dic 25","2026-01":"Ene 26","2026-02":"Feb 26","2026-03":"Mar 26"};
+const MESES_ES  = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+function mesLabel(ym){const[y,m]=ym.split("-");return `${MESES_ES[parseInt(m)-1]} ${y.slice(2)}`;}
 
-let allData = [], charts = {}, vistaActual = "resumen";
+let allData=[], charts={}, vistaActual="resumen";
 
 const fmt   = n => Number(n||0).toLocaleString("es-CL");
 const toInt = v => { const n=parseInt(String(v||0).replace(/\D/g,"")); return isNaN(n)?0:n; };
 const diaSemana = s => { const d=new Date(s+"T12:00:00"); return isNaN(d)?-1:d.getDay(); };
 
-function parseRows(results) {
+function parseRows(results){
   const rows=[], H=results.data[0]||[];
-  const ci = {
+  const ci={
     mision: H.findIndex(h=>/mis.+n/i.test(h)),
     fecha:  H.findIndex(h=>/fecha/i.test(h)),
     adultos:H.findIndex(h=>/adultos/i.test(h)),
@@ -166,7 +145,7 @@ function filtrar(){
 
 function agruparMes(data,esLF){
   const map={},cnt={},cntS={},cntD={},sumS={},sumD={};
-  const meses=[...new Set(allData.map(d=>d.mes))].sort();
+  const meses=[...new Set(data.map(d=>d.mes))].sort();
   data.forEach(d=>{
     if(!map[d.mes]){map[d.mes]={mes:d.mes,adultos:0,visitas:0,ninos:0,ninosV:0,deci:0,total:0};cnt[d.mes]=0;cntS[d.mes]=0;cntD[d.mes]=0;sumS[d.mes]=0;sumD[d.mes]=0;}
     map[d.mes].adultos+=d.adultos;map[d.mes].visitas+=d.visitas;map[d.mes].ninos+=d.ninos;
@@ -176,21 +155,11 @@ function agruparMes(data,esLF){
   return meses.map(m=>{
     const r=map[m]||{mes:m,adultos:0,visitas:0,ninos:0,ninosV:0,deci:0,total:0};
     const n=cnt[m]||1;
-    return{...r,label:MES_LBL[m]||m,
+    return{...r,label:mesLabel(m),
       promedio:Math.round(r.total/n),
       promSab:cntS[m]?Math.round(sumS[m]/cntS[m]):null,
       promDom:cntD[m]?Math.round(sumD[m]/cntD[m]):null};
   });
-}
-
-function agruparMision(){
-  const map={};
-  allData.forEach(d=>{
-    if(!map[d.mision])map[d.mision]={mision:d.mision,adultos:0,ninos:0,visitas:0,ninosV:0,deci:0,total:0};
-    map[d.mision].adultos+=d.adultos;map[d.mision].ninos+=d.ninos;map[d.mision].visitas+=d.visitas;
-    map[d.mision].ninosV+=d.ninosV;map[d.mision].deci+=d.deci;map[d.mision].total+=d.total;
-  });
-  return Object.values(map).sort((a,b)=>b.total-a.total);
 }
 
 function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
@@ -198,16 +167,13 @@ function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];
 function renderKPIs(data){
   const fecha=document.getElementById("filtro-fecha").value;
   const mision=document.getElementById("filtro-mision").value;
-  let kpiData=data;
-  let sub="";
+  let kpiData=data, sub="";
 
-  if(!fecha && !mision){
-    // Última fecha global con datos
+  if(!fecha&&!mision){
     const ultFecha=[...new Set(allData.map(d=>d.fecha))].sort().pop();
     kpiData=allData.filter(d=>d.fecha===ultFecha);
     sub=`<div class="kpi-sub">última reunión: ${ultFecha}</div>`;
-  } else if(!fecha && mision){
-    // Última fecha de esa misión
+  } else if(!fecha&&mision){
     const ultFecha=[...new Set(data.map(d=>d.fecha))].sort().pop();
     kpiData=data.filter(d=>d.fecha===ultFecha);
     sub=`<div class="kpi-sub">última reunión: ${ultFecha}</div>`;
@@ -218,7 +184,7 @@ function renderKPIs(data){
   const t={adultos:0,visitas:0,ninos:0,ninosV:0,deci:0};
   kpiData.forEach(d=>{t.adultos+=d.adultos;t.visitas+=d.visitas;t.ninos+=d.ninos;t.ninosV+=d.ninosV;t.deci+=d.deci;});
 
-  // Promedio de adultos por reunión del último mes
+  // Promedio adultos por reunión del último mes
   const todosMesesProm=[...new Set(allData.map(d=>d.mes))].sort();
   const ultMes=todosMesesProm[todosMesesProm.length-1];
   const datosUltMes=allData.filter(d=>d.mes===ultMes);
@@ -242,183 +208,148 @@ function render(){
   const mision=document.getElementById("filtro-mision").value;
   const esLF=mision==="La Florida";
 
-  // warnings
   document.getElementById("warning-florida").style.display=esLF?"flex":"none";
-  document.getElementById("warning-florida-t").style.display=esLF?"flex":"none";
-
   renderKPIs(data);
   const meses=agruparMes(data,esLF);
   const labels=meses.map(m=>m.label);
 
-  if(vistaActual==="resumen"){
-    // Gráfico principal
-    destroyChart("principal");
-    if(esLF){
-      const fecha=document.getElementById("filtro-fecha").value;
-      if(fecha){
-        // Con fecha: barras por reunión de ese día
-        document.getElementById("titulo-principal").textContent="Asistencia Real por Fecha — La Florida";
-        document.getElementById("subtitulo-principal").textContent="Cada barra es una reunión · Amarillo = sábado · Azul = domingo";
-        const lf=data.filter(d=>d.mision==="La Florida").sort((a,b)=>a.fecha.localeCompare(b.fecha));
-        charts["principal"]=new Chart(document.getElementById("chart-principal"),{
-          type:"bar",
-          data:{
-            labels:lf.map(d=>d.fecha.slice(5)),
-            datasets:[{label:"Asistencia",data:lf.map(d=>d.total),backgroundColor:lf.map(d=>d.esSab?"#f59e0b":"#6366f1"),borderRadius:3}]
-          },
-          options:{responsive:true,plugins:{legend:{display:false},
-            tooltip:{callbacks:{title:t=>{const d=lf[t[0].dataIndex];return `${d.fecha} (${d.esSab?"Sábado":"Domingo"})`;}}}
-          }}
-        });
-      } else {
-        // Sin fecha: por mes sábado vs domingo lado a lado — TOTALES REALES
-        document.getElementById("titulo-principal").textContent="Asistencia por Mes — Sábado vs Domingo";
-        document.getElementById("subtitulo-principal").textContent="Total real de asistentes por mes según día";
-        const cntSabMes={}, cntDomMes={};
-        allData.filter(d=>d.mision==="La Florida").forEach(d=>{
-          if(d.esSab){ mapSab[d.mes]=(mapSab[d.mes]||0)+d.total; cntSabMes[d.mes]=(cntSabMes[d.mes]||0)+1; }
-          if(d.esDom){ mapDom[d.mes]=(mapDom[d.mes]||0)+d.total; cntDomMes[d.mes]=(cntDomMes[d.mes]||0)+1; }
-        });
-        charts["principal"]=new Chart(document.getElementById("chart-principal"),{
-          type:"bar",
-          data:{labels,datasets:[
-            {label:"Sábado",data:meses.map(m=>mapSab[m.mes]||0),backgroundColor:"#f59e0b",borderRadius:4},
-            {label:"Domingo",data:meses.map(m=>mapDom[m.mes]||0),backgroundColor:"#6366f1",borderRadius:4},
-          ]},
-          options:{responsive:true,
-            plugins:{
-              legend:{position:"bottom"},
-              tooltip:{callbacks:{
-                label:ctx=>{
-                  const mes=meses[ctx.dataIndex].mes;
-                  const esSab=ctx.dataset.label==="Sábado";
-                  const cnt=esSab?(cntSabMes[mes]||0):(cntDomMes[mes]||0);
-                  return `${ctx.dataset.label}: ${fmt(ctx.parsed.y)} asistentes en ${cnt} reunión${cnt!==1?"es":""}`;
-                }
-              }}
-            }
-          }
-        });
-      }
+  // Gráfico principal
+  destroyChart("principal");
+  if(esLF){
+    const fecha=document.getElementById("filtro-fecha").value;
+    if(fecha){
+      document.getElementById("titulo-principal").textContent="Asistencia Real por Fecha — La Florida";
+      document.getElementById("subtitulo-principal").textContent="Cada barra es una reunión · Amarillo = sábado · Azul = domingo";
+      const lf=data.filter(d=>d.mision==="La Florida").sort((a,b)=>a.fecha.localeCompare(b.fecha));
+      charts["principal"]=new Chart(document.getElementById("chart-principal"),{
+        type:"bar",
+        data:{labels:lf.map(d=>d.fecha.slice(5)),datasets:[{label:"Asistencia",data:lf.map(d=>d.total),backgroundColor:lf.map(d=>d.esSab?"#f59e0b":"#6366f1"),borderRadius:3}]},
+        options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{title:t=>{const d=lf[t[0].dataIndex];return `${d.fecha} (${d.esSab?"Sábado":"Domingo"})`;}}}}
+        }
+      });
     } else {
-      document.getElementById("titulo-principal").textContent="Asistencia por Mes";
-      document.getElementById("subtitulo-principal").textContent="Barras = totales · Línea roja = promedio por reunión";
+      document.getElementById("titulo-principal").textContent="Asistencia por Mes — Sábado vs Domingo";
+      document.getElementById("subtitulo-principal").textContent="Total real de asistentes por mes según día";
+      const mapSab={},mapDom={},cntSabMes={},cntDomMes={};
+      allData.filter(d=>d.mision==="La Florida").forEach(d=>{
+        if(d.esSab){mapSab[d.mes]=(mapSab[d.mes]||0)+d.total;cntSabMes[d.mes]=(cntSabMes[d.mes]||0)+1;}
+        if(d.esDom){mapDom[d.mes]=(mapDom[d.mes]||0)+d.total;cntDomMes[d.mes]=(cntDomMes[d.mes]||0)+1;}
+      });
       charts["principal"]=new Chart(document.getElementById("chart-principal"),{
         type:"bar",
         data:{labels,datasets:[
-          {label:"Adultos",data:meses.map(m=>m.adultos),backgroundColor:"#6366f1",stack:"a"},
-          {label:"Niños",data:meses.map(m=>m.ninos),backgroundColor:"#f59e0b",stack:"a"},
-          {label:"Visitas Adultos",data:meses.map(m=>m.visitas),backgroundColor:"#22c55e",stack:"a"},
-          {label:"Visitas Niños",data:meses.map(m=>m.ninosV),backgroundColor:"#a855f7",stack:"a"},
-          {label:"Promedio x reunión",data:meses.map(m=>m.promedio),type:"line",borderColor:"#ef4444",backgroundColor:"transparent",borderWidth:2.5,pointRadius:4,borderDash:[6,3],yAxisID:"y2"},
+          {label:"Sábado",data:meses.map(m=>mapSab[m.mes]||0),backgroundColor:"#f59e0b",borderRadius:4},
+          {label:"Domingo",data:meses.map(m=>mapDom[m.mes]||0),backgroundColor:"#6366f1",borderRadius:4},
         ]},
-        options:{responsive:true,plugins:{legend:{position:"bottom"}},scales:{x:{stacked:true},y:{stacked:true},y2:{position:"right",ticks:{callback:v=>`~${v}`}}}}
+        options:{responsive:true,plugins:{legend:{position:"bottom"},tooltip:{callbacks:{label:ctx=>{
+          const mes=meses[ctx.dataIndex].mes;
+          const esSab=ctx.dataset.label==="Sábado";
+          const cnt=esSab?(cntSabMes[mes]||0):(cntDomMes[mes]||0);
+          return `${ctx.dataset.label}: ${fmt(ctx.parsed.y)} asistentes en ${cnt} reunión${cnt!==1?"es":""}`;
+        }}}}}
       });
     }
-
-    // Pie — última reunión por misión
-    destroyChart("pie");
-    const ultFecha=[...new Set(allData.map(d=>d.fecha))].sort().pop();
-    const ultData=allData.filter(d=>d.fecha===ultFecha);
-    const pmUlt=[];
-    const mapUlt={};
-    ultData.forEach(d=>{
-      if(!mapUlt[d.mision]) mapUlt[d.mision]=0;
-      mapUlt[d.mision]+=d.total;
-    });
-    Object.entries(mapUlt).forEach(([mision,total])=>pmUlt.push({mision,total}));
-    pmUlt.sort((a,b)=>b.total-a.total);
-    charts["pie"]=new Chart(document.getElementById("chart-pie"),{
-      type:"doughnut",
-      data:{labels:pmUlt.map(m=>m.mision),datasets:[{data:pmUlt.map(m=>m.total),backgroundColor:COLORS}]},
-      options:{responsive:true,plugins:{
-        legend:{position:"right",labels:{font:{size:11}}},
-        title:{display:true,text:`Última reunión: ${ultFecha}`,font:{size:11},color:"#94a3b8"}
-      }}
-    });
-
-    // Decisiones
-    destroyChart("deci");
-    charts["deci"]=new Chart(document.getElementById("chart-decisiones"),{
-      type:"line",
-      data:{labels,datasets:[{label:"Decisiones de Fe",data:meses.map(m=>m.deci),borderColor:"#ef4444",backgroundColor:"rgba(239,68,68,.1)",fill:true,tension:.3,pointRadius:5}]},
-      options:{responsive:true,plugins:{legend:{display:false}}}
-    });
-  }
-
-  if(vistaActual==="tendencia"){
-    // Sáb vs Dom solo La Florida
-    const cardSD=document.getElementById("card-sabdom");
-    cardSD.style.display=esLF?"block":"none";
-    if(esLF){
-      destroyChart("sabdom");
-      charts["sabdom"]=new Chart(document.getElementById("chart-sabdom"),{
-        type:"line",
-        data:{labels,datasets:[
-          {label:"Prom. Sábado",data:meses.map(m=>m.promSab),borderColor:"#f59e0b",borderWidth:2.5,pointRadius:4,tension:.3},
-          {label:"Prom. Domingo",data:meses.map(m=>m.promDom),borderColor:"#6366f1",borderWidth:2.5,pointRadius:4,tension:.3},
-        ]},
-        options:{responsive:true,plugins:{legend:{position:"bottom"}}}
-      });
-    }
-
-    destroyChart("tend");
-    charts["tend"]=new Chart(document.getElementById("chart-tendencia"),{
-      type:"line",
-      data:{labels,datasets:[
-        {label:"Adultos",data:meses.map(m=>m.adultos),borderColor:"#6366f1",tension:.3,pointRadius:3,borderWidth:2},
-        {label:"Niños",data:meses.map(m=>m.ninos),borderColor:"#f59e0b",tension:.3,pointRadius:3,borderWidth:2},
-        {label:"Visitas Adultos",data:meses.map(m=>m.visitas),borderColor:"#22c55e",tension:.3,pointRadius:3,borderWidth:2},
-        {label:"Visitas Niños",data:meses.map(m=>m.ninosV),borderColor:"#a855f7",tension:.3,pointRadius:3,borderWidth:2},
-      ]},
-      options:{responsive:true,plugins:{legend:{position:"bottom"}}}
-    });
-
-    // Tabla
-    const thead=document.querySelector("#tabla-meses thead");
-    const tbody=document.querySelector("#tabla-meses tbody");
-    thead.innerHTML=`<tr>${["Mes","Adultos","Vis. Adultos","Niños","Vis. Niños","Decisiones",
-      ...(esLF?["Prom. Sábado","Prom. Domingo"]:["Prom./reunión"]),"Total"]
-      .map(h=>`<th>${h}</th>`).join("")}</tr>`;
-    tbody.innerHTML=meses.map((m,i)=>`<tr>
-      <td><strong>${m.label}</strong></td>
-      <td>${fmt(m.adultos)}</td><td>${fmt(m.visitas)}</td>
-      <td>${fmt(m.ninos)}</td><td>${fmt(m.ninosV)}</td>
-      <td style="color:#b91c1c;font-weight:600">${fmt(m.deci)}</td>
-      ${esLF
-        ?`<td style="color:#d97706;font-weight:600">${m.promSab!=null?`~${m.promSab}`:"—"}</td><td style="color:#6366f1;font-weight:600">${m.promDom!=null?`~${m.promDom}`:"—"}</td>`
-        :`<td style="color:#ea580c;font-weight:600">~${m.promedio}</td>`}
-      <td style="color:#6366f1;font-weight:700">${fmt(m.total)}</td>
-    </tr>`).join("");
-  }
-
-  if(vistaActual==="misiones"){
-    const pm=agruparMision();
-    destroyChart("mis");
-    charts["mis"]=new Chart(document.getElementById("chart-misiones"),{
+  } else {
+    document.getElementById("titulo-principal").textContent="Asistencia por Mes";
+    document.getElementById("subtitulo-principal").textContent="Barras = totales · Línea roja = promedio por reunión";
+    charts["principal"]=new Chart(document.getElementById("chart-principal"),{
       type:"bar",
-      data:{labels:pm.map(m=>m.mision),datasets:[
-        {label:"Adultos",data:pm.map(m=>m.adultos),backgroundColor:"#6366f1",stack:"a"},
-        {label:"Niños",data:pm.map(m=>m.ninos),backgroundColor:"#f59e0b",stack:"a"},
-        {label:"Visitas Adultos",data:pm.map(m=>m.visitas),backgroundColor:"#22c55e",stack:"a"},
-        {label:"Visitas Niños",data:pm.map(m=>m.ninosV),backgroundColor:"#a855f7",stack:"a"},
+      data:{labels,datasets:[
+        {label:"Adultos",data:meses.map(m=>m.adultos),backgroundColor:"#6366f1",stack:"a"},
+        {label:"Niños",data:meses.map(m=>m.ninos),backgroundColor:"#f59e0b",stack:"a"},
+        {label:"Visitas Adultos",data:meses.map(m=>m.visitas),backgroundColor:"#22c55e",stack:"a"},
+        {label:"Visitas Niños",data:meses.map(m=>m.ninosV),backgroundColor:"#a855f7",stack:"a"},
+        {label:"Promedio x reunión",data:meses.map(m=>m.promedio),type:"line",borderColor:"#ef4444",backgroundColor:"transparent",borderWidth:2.5,pointRadius:4,borderDash:[6,3],yAxisID:"y2"},
       ]},
-      options:{responsive:true,plugins:{legend:{position:"bottom"}},scales:{x:{stacked:true},y:{stacked:true}}}
+      options:{responsive:true,plugins:{legend:{position:"bottom"}},scales:{x:{stacked:true},y:{stacked:true},y2:{position:"right",ticks:{callback:v=>`~${v}`}}}}
     });
-    document.querySelector("#tabla-misiones tbody").innerHTML=pm.map((m,i)=>`<tr>
-      <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${COLORS[i%COLORS.length]};margin-right:6px"></span><strong>${m.mision}</strong></td>
-      <td>${fmt(m.adultos)}</td><td>${fmt(m.ninos)}</td><td>${fmt(m.visitas)}</td><td>${fmt(m.ninosV)}</td>
-      <td style="color:#b91c1c;font-weight:600">❤️ ${fmt(m.deci)}</td>
-      <td style="color:#6366f1;font-weight:700">${fmt(m.total)}</td>
-    </tr>`).join("");
   }
+
+  // Pie — adultos última reunión por misión; La Florida separada Sáb/Dom
+  destroyChart("pie");
+  const mapUltFecha={};
+  allData.forEach(d=>{
+    if(d.mision==="La Florida") return;
+    if(!mapUltFecha[d.mision]||d.fecha>mapUltFecha[d.mision]) mapUltFecha[d.mision]=d.fecha;
+  });
+  const pmUlt=[];
+  Object.entries(mapUltFecha).forEach(([mision,fecha])=>{
+    const filas=allData.filter(d=>d.mision===mision&&d.fecha===fecha);
+    const adultos=filas.reduce((s,d)=>s+d.adultos,0);
+    if(adultos>0) pmUlt.push({mision,adultos,fecha});
+  });
+  const lfData=allData.filter(d=>d.mision==="La Florida");
+  const ultSab=lfData.filter(d=>d.esSab).sort((a,b)=>b.fecha.localeCompare(a.fecha))[0];
+  const ultDom=lfData.filter(d=>d.esDom).sort((a,b)=>b.fecha.localeCompare(a.fecha))[0];
+  if(ultSab) pmUlt.push({mision:"La Fl. Sábado",adultos:ultSab.adultos,fecha:ultSab.fecha});
+  if(ultDom) pmUlt.push({mision:"La Fl. Domingo",adultos:ultDom.adultos,fecha:ultDom.fecha});
+  pmUlt.sort((a,b)=>b.adultos-a.adultos);
+  const fechasPie=[...new Set(pmUlt.map(m=>m.fecha))].sort();
+  const pieLabel=fechasPie.length===1?`Última reunión: ${fechasPie[0]}`:`Últimas reuniones: ${fechasPie[0]} — ${fechasPie[fechasPie.length-1]}`;
+  charts["pie"]=new Chart(document.getElementById("chart-pie"),{
+    type:"doughnut",
+    data:{labels:pmUlt.map(m=>m.mision),datasets:[{data:pmUlt.map(m=>m.adultos),backgroundColor:COLORS}]},
+    options:{responsive:true,plugins:{
+      legend:{position:"right",labels:{font:{size:11}}},
+      title:{display:true,text:pieLabel,font:{size:11},color:"#94a3b8"},
+      tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.parsed} adultos`}}
+    }}
+  });
+
+  // Decisiones por misión — barras agrupadas
+  destroyChart("deci");
+  const todosMesesDeci=[...new Set(allData.map(d=>d.mes))].sort();
+  const labelsDeci=todosMesesDeci.map(m=>mesLabel(m));
+  const misionesDeci=[...new Set(allData.map(d=>d.mision))].sort();
+  const deciPorMision={};
+  allData.forEach(d=>{
+    if(!deciPorMision[d.mision]) deciPorMision[d.mision]={};
+    if(!deciPorMision[d.mision][d.mes]) deciPorMision[d.mision][d.mes]=0;
+    deciPorMision[d.mision][d.mes]+=d.deci;
+  });
+  charts["deci"]=new Chart(document.getElementById("chart-decisiones"),{
+    type:"bar",
+    data:{labels:labelsDeci,datasets:misionesDeci.map((mis,i)=>({
+      label:mis,
+      data:todosMesesDeci.map(m=>deciPorMision[mis]&&deciPorMision[mis][m]?deciPorMision[mis][m]:0),
+      backgroundColor:COLORS[i%COLORS.length],
+      borderRadius:3,
+    }))},
+    options:{responsive:true,
+      plugins:{legend:{position:"bottom",labels:{font:{size:11},boxWidth:12}}},
+      scales:{x:{ticks:{font:{size:10}}},y:{beginAtZero:true,ticks:{stepSize:1}}},
+      barPercentage:0.9,categoryPercentage:0.85
+    }
+  });
+
+  // Tabla decisiones
+  const thMeses=todosMesesDeci.map(m=>`<th style="text-align:center;white-space:nowrap">${mesLabel(m)}</th>`).join("");
+  document.querySelector("#tabla-decisiones thead").innerHTML=`<tr><th>Misión</th>${thMeses}<th style="text-align:center">Total</th></tr>`;
+  const totalesMes={};
+  todosMesesDeci.forEach(m=>totalesMes[m]=0);
+  const tbodyRows=misionesDeci.map((mis,i)=>{
+    let totalMis=0;
+    const celdas=todosMesesDeci.map(m=>{
+      const v=deciPorMision[mis]&&deciPorMision[mis][m]?deciPorMision[mis][m]:0;
+      totalesMes[m]+=v; totalMis+=v;
+      const bg=v>0?`background:rgba(239,68,68,${Math.min(0.08+v*0.08,0.55)});color:#b91c1c;font-weight:600`:"color:#cbd5e1";
+      return `<td style="text-align:center;${bg}">${v||"·"}</td>`;
+    }).join("");
+    return `<tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${COLORS[i%COLORS.length]};margin-right:6px"></span><strong>${mis}</strong></td>${celdas}<td style="text-align:center;font-weight:700;color:#b91c1c">${totalMis||"·"}</td></tr>`;
+  });
+  let granTotal=0;
+  const filaTotales=todosMesesDeci.map(m=>{
+    granTotal+=totalesMes[m];
+    return `<td style="text-align:center;font-weight:700;color:#b91c1c;border-top:2px solid #fecaca">${totalesMes[m]||"·"}</td>`;
+  }).join("");
+  tbodyRows.push(`<tr style="background:#fff1f2"><td><strong>Total</strong></td>${filaTotales}<td style="text-align:center;font-weight:800;color:#b91c1c;border-top:2px solid #fecaca">${granTotal}</td></tr>`);
+  document.querySelector("#tabla-decisiones tbody").innerHTML=tbodyRows.join("");
 }
 
 function mostrarVista(v){
   vistaActual=v;
   document.querySelectorAll(".seccion").forEach(s=>s.classList.remove("activa"));
   document.getElementById(`sec-${v}`).classList.add("activa");
-  document.querySelectorAll(".vistas button").forEach(b=>b.classList.toggle("active",b.dataset.vista===v));
   render();
 }
 
@@ -453,7 +384,6 @@ function mostrarError(msg){
   el.style.display="block";
 }
 
-document.querySelectorAll(".vistas button").forEach(b=>b.addEventListener("click",()=>mostrarVista(b.dataset.vista)));
 document.getElementById("filtro-mision").addEventListener("change",render);
 document.getElementById("filtro-fecha").addEventListener("change",render);
 document.getElementById("btn-limpiar").addEventListener("click",()=>{document.getElementById("filtro-fecha").value="";render();});
