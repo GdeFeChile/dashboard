@@ -159,19 +159,18 @@ function filtrar(){
   return allData.filter(r=>(!m||r.mision===m)&&(!f||r.fecha===f));
 }
 
-function calcularPromedioMensual(data) {
-  // Agrupa totales por mes y calcula el promedio entre todos los meses
-  const porMes = {};
-  data.forEach(d => {
-    if (!porMes[d.mes]) porMes[d.mes] = 0;
-    porMes[d.mes] += d.total;
-  });
-  const meses = Object.keys(porMes);
-  if (!meses.length) return { promedio: 0, meses: 0 };
-  const suma = meses.reduce((s, m) => s + porMes[m], 0);
+function calcularPromedioUltimoMes(data) {
+  // Encuentra el último mes con datos
+  const meses = [...new Set(data.map(d => d.mes))].sort();
+  if (!meses.length) return { promedio: 0, mes: "—", reuniones: 0 };
+  const ultimoMes = meses[meses.length - 1];
+  const filas = data.filter(d => d.mes === ultimoMes);
+  const totalAdultos = filas.reduce((s, d) => s + d.adultos, 0);
+  const reuniones = filas.length;
   return {
-    promedio: Math.round(suma / meses.length),
-    meses: meses.length
+    promedio: reuniones ? Math.round(totalAdultos / reuniones) : 0,
+    mes: mesLabel(ultimoMes),
+    reuniones
   };
 }
 
@@ -217,12 +216,11 @@ function renderKPIs(data){
   const t={adultos:0,visitas:0,ninos:0,ninosV:0,deci:0};
   kpiData.forEach(d=>{t.adultos+=d.adultos;t.visitas+=d.visitas;t.ninos+=d.ninos;t.ninosV+=d.ninosV;t.deci+=d.deci;});
 
-  // Calcular promedio mensual según selección
-  // Usamos allData filtrado por misión (sin filtro de fecha) para el promedio
+  // Calcular promedio adultos último mes según selección (sin filtro de fecha)
   const dataProm = mision ? allData.filter(d=>d.mision===mision) : allData;
-  const {promedio, meses} = calcularPromedioMensual(dataProm);
-  const labelProm = mision ? `Promedio mensual · ${mision}` : "Promedio mensual global";
-  const subProm = `<div class="kpi-sub">basado en ${meses} mes${meses!==1?"es":""} de registro</div>`;
+  const {promedio, mes: ultimoMesLabel, reuniones} = calcularPromedioUltimoMes(dataProm);
+  const labelProm = `Prom. adultos por reunión · ${ultimoMesLabel}`;
+  const subProm = `<div class="kpi-sub">${reuniones} reunión${reuniones!==1?"es":""} · ${mision||"todas las misiones"}</div>`;
 
   const kpiBase = [
     {icon:"👥",label:"Asistencia Adultos",val:fmt(t.adultos)},
