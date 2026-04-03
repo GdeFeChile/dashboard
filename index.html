@@ -27,14 +27,9 @@ header p{font-size:0.85rem;color:#c7d2fe;margin-top:2px}
 main{max-width:1100px;margin:0 auto;padding:24px}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px}
 .kpi-card{background:white;border-radius:12px;border:1px solid #e2e8f0;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
-.kpi-card.kpi-highlight{background:linear-gradient(135deg,#eef2ff,#e0e7ff);border-color:#a5b4fc}
 .kpi-card .icon{font-size:1.4rem;margin-bottom:6px}
 .kpi-card .label{font-size:0.72rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
-.kpi-card.kpi-highlight .label{color:#4338ca}
-.kpi-card .value{font-size:1.5rem;font-weight:700;color:#1e293b;margin-top:4px}
-.kpi-card.kpi-highlight .value{color:#3730a3}
 .kpi-sub{font-size:0.68rem;color:#94a3b8;margin-top:4px}
-.kpi-card.kpi-highlight .kpi-sub{color:#6366f1}
 .charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:20px;margin-bottom:24px}
 .chart-card{background:white;border-radius:12px;border:1px solid #e2e8f0;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .chart-card h2{font-size:0.85rem;font-weight:700;color:#334155;margin-bottom:6px}
@@ -159,21 +154,6 @@ function filtrar(){
   return allData.filter(r=>(!m||r.mision===m)&&(!f||r.fecha===f));
 }
 
-function calcularPromedioUltimoMes(data) {
-  // Encuentra el último mes con datos
-  const meses = [...new Set(data.map(d => d.mes))].sort();
-  if (!meses.length) return { promedio: 0, mes: "—", reuniones: 0 };
-  const ultimoMes = meses[meses.length - 1];
-  const filas = data.filter(d => d.mes === ultimoMes);
-  const totalAdultos = filas.reduce((s, d) => s + d.adultos, 0);
-  const reuniones = filas.length;
-  return {
-    promedio: reuniones ? Math.round(totalAdultos / reuniones) : 0,
-    mes: mesLabel(ultimoMes),
-    reuniones
-  };
-}
-
 function agruparMes(data,esLF){
   const map={},cnt={},cntS={},cntD={},sumS={},sumD={};
   const meses=[...new Set(data.map(d=>d.mes))].sort();
@@ -193,6 +173,7 @@ function agruparMes(data,esLF){
   });
 }
 
+
 function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
 
 function renderKPIs(data){
@@ -202,10 +183,12 @@ function renderKPIs(data){
   let sub="";
 
   if(!fecha && !mision){
+    // Última fecha global con datos
     const ultFecha=[...new Set(allData.map(d=>d.fecha))].sort().pop();
     kpiData=allData.filter(d=>d.fecha===ultFecha);
     sub=`<div class="kpi-sub">última reunión: ${ultFecha}</div>`;
   } else if(!fecha && mision){
+    // Última fecha de esa misión
     const ultFecha=[...new Set(data.map(d=>d.fecha))].sort().pop();
     kpiData=data.filter(d=>d.fecha===ultFecha);
     sub=`<div class="kpi-sub">última reunión: ${ultFecha}</div>`;
@@ -215,29 +198,13 @@ function renderKPIs(data){
 
   const t={adultos:0,visitas:0,ninos:0,ninosV:0,deci:0};
   kpiData.forEach(d=>{t.adultos+=d.adultos;t.visitas+=d.visitas;t.ninos+=d.ninos;t.ninosV+=d.ninosV;t.deci+=d.deci;});
-
-  // Calcular promedio adultos último mes según selección (sin filtro de fecha)
-  const dataProm = mision ? allData.filter(d=>d.mision===mision) : allData;
-  const {promedio, mes: ultimoMesLabel, reuniones} = calcularPromedioUltimoMes(dataProm);
-  const labelProm = `Prom. adultos por reunión · ${ultimoMesLabel}`;
-  const subProm = `<div class="kpi-sub">${reuniones} reunión${reuniones!==1?"es":""} · ${mision||"todas las misiones"}</div>`;
-
-  const kpiBase = [
+  document.getElementById("kpis").innerHTML=[
     {icon:"👥",label:"Asistencia Adultos",val:fmt(t.adultos)},
     {icon:"🙋",label:"Visitas Adultos",val:fmt(t.visitas)},
     {icon:"👶",label:"Asistencia Niños",val:fmt(t.ninos)},
     {icon:"🧒",label:"Visitas Niños",val:fmt(t.ninosV)},
     {icon:"❤️",label:"Decisiones de Fe",val:fmt(t.deci)},
   ].map(k=>`<div class="kpi-card"><div class="icon">${k.icon}</div><div class="label">${k.label}</div><div class="value">${k.val}</div>${sub}</div>`).join("");
-
-  const kpiProm = `<div class="kpi-card kpi-highlight">
-    <div class="icon">📈</div>
-    <div class="label">${labelProm}</div>
-    <div class="value">${fmt(promedio)}</div>
-    ${subProm}
-  </div>`;
-
-  document.getElementById("kpis").innerHTML = kpiBase + kpiProm;
 }
 
 function render(){
@@ -245,6 +212,7 @@ function render(){
   const mision=document.getElementById("filtro-mision").value;
   const esLF=mision==="La Florida";
 
+  // warnings
   document.getElementById("warning-florida").style.display=esLF?"flex":"none";
 
   renderKPIs(data);
@@ -252,10 +220,12 @@ function render(){
   const labels=meses.map(m=>m.label);
 
   if(vistaActual==="resumen"){
+    // Gráfico principal
     destroyChart("principal");
     if(esLF){
       const fecha=document.getElementById("filtro-fecha").value;
       if(fecha){
+        // Con fecha: barras por reunión de ese día
         document.getElementById("titulo-principal").textContent="Asistencia Real por Fecha — La Florida";
         document.getElementById("subtitulo-principal").textContent="Cada barra es una reunión · Amarillo = sábado · Azul = domingo";
         const lf=data.filter(d=>d.mision==="La Florida").sort((a,b)=>a.fecha.localeCompare(b.fecha));
@@ -270,6 +240,7 @@ function render(){
           }}
         });
       } else {
+        // Sin fecha: por mes sábado vs domingo lado a lado — TOTALES REALES
         document.getElementById("titulo-principal").textContent="Asistencia por Mes — Sábado vs Domingo";
         document.getElementById("subtitulo-principal").textContent="Total real de asistentes por mes según día";
         const mapSab={}, mapDom={}, cntSabMes={}, cntDomMes={};
@@ -314,6 +285,7 @@ function render(){
       });
     }
 
+    // Pie — adultos de la última reunión por misión; La Florida separada en Sáb/Dom
     destroyChart("pie");
     const mapUltFecha={};
     allData.forEach(d=>{
@@ -344,6 +316,7 @@ function render(){
       }}
     });
 
+    // Decisiones por misión — una línea por misión
     destroyChart("deci");
     const todosMesesDeci=[...new Set(allData.map(d=>d.mes))].sort();
     const labelsDeci=todosMesesDeci.map(m=>mesLabel(m));
@@ -369,8 +342,10 @@ function render(){
       }
     });
 
+    // Tabla decisiones por misión x mes
     const thMeses=todosMesesDeci.map(m=>`<th style="text-align:center;white-space:nowrap">${mesLabel(m)}</th>`).join("");
     document.querySelector("#tabla-decisiones thead").innerHTML=`<tr><th>Misión</th>${thMeses}<th style="text-align:center">Total</th></tr>`;
+    // Totales por mes para fila final
     const totalesMes={};
     todosMesesDeci.forEach(m=>totalesMes[m]=0);
     const tbodyRows=misionesDeci.map((mis,i)=>{
@@ -383,6 +358,7 @@ function render(){
       }).join("");
       return `<tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${COLORS[i%COLORS.length]};margin-right:6px"></span><strong>${mis}</strong></td>${celdas}<td style="text-align:center;font-weight:700;color:#b91c1c">${totalMis||"·"}</td></tr>`;
     });
+    // Fila total
     let granTotal=0;
     const filaTotales=todosMesesDeci.map(m=>{
       granTotal+=totalesMes[m];
@@ -392,6 +368,7 @@ function render(){
     document.querySelector("#tabla-decisiones tbody").innerHTML=tbodyRows.join("");
   }
 }
+
 
 function mostrarVista(v){
   vistaActual=v;
@@ -440,5 +417,8 @@ document.getElementById("btn-actualizar").addEventListener("click",cargar);
 
 cargar();
 </script>
+
+  </div>
+</div>
 </body>
 </html>
